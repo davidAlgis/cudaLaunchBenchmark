@@ -13,27 +13,13 @@ set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Default architectures if not provided by user.
-# Override with: -DCMAKE_CUDA_ARCHITECTURES=86 (for RTX 30xx), 89 (RTX 40xx), etc.
+# Architectures (override with -DCMAKE_CUDA_ARCHITECTURES=86, 89, etc.)
 if(NOT CMAKE_CUDA_ARCHITECTURES)
-  # 70 = Volta baseline; tweak to your GPU for optimal codegen
-  set(CMAKE_CUDA_ARCHITECTURES 70)
+  set(CMAKE_CUDA_ARCHITECTURES 75)
 endif()
 
-# Dynamic parallelism needs device linking and rdc
+# Dynamic parallelism needs separable compilation (-rdc=true)
 set(CMAKE_CUDA_SEPARABLE_COMPILATION ON)
-# (Implicitly sets -rdc=true for CUDA sources in this target)
-
-# Warnings
-if(BENCH_ENABLE_WARNINGS)
-  if(MSVC)
-    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:/W4>)
-  else()
-    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wall -Wextra -Wpedantic>)
-  endif()
-  # nvcc host-side warnings
-  set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=-Wall,-Wextra,-Wpedantic")
-endif()
 
 # Sources
 set(BENCH_SRC
@@ -42,24 +28,33 @@ set(BENCH_SRC
   cudaLaunchBench/launch_host.cu
   cudaLaunchBench/launch_dp.cu
 )
-
 add_executable(cudaLaunchBench ${BENCH_SRC})
-
 target_include_directories(cudaLaunchBench PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/cudaLaunchBench
 )
-
-# Helpful defines you can use in code for conditional sections
 target_compile_definitions(cudaLaunchBench PRIVATE
   BENCH_HAS_DYNAMIC_PARALLELISM=1
 )
 
-# On Windows, ensure static runtime only if you explicitly want it:
-# set_property(TARGET cudaLaunchBench PROPERTY
-#   MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>"
-# )
+# ------------------------------
+# Warnings per toolchain (FIX)
+# ------------------------------
+if(BENCH_ENABLE_WARNINGS)
+  if(MSVC)
+    # C++ files: /W4 ; CUDA files: pass /W4 to host compiler via -Xcompiler
+    target_compile_options(cudaLaunchBench PRIVATE
+      $<$<COMPILE_LANGUAGE:CXX>:/W4>
+      $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=/W4>
+    )
+  else()
+    # GCC/Clang: standard warnings; for CUDA also forward to host via -Xcompiler
+    target_compile_options(cudaLaunchBench PRIVATE
+      $<$<COMPILE_LANGUAGE:CXX>:-Wall -Wextra -Wpedantic>
+      $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=-Wall,-Wextra,-Wpedantic>
+    )
+  endif()
+endif()
 
-# Print a friendly note if architectures may not support DP
-# (dynamic parallelism requires sm_35+)
+# Helpful note
 string(REPLACE ";" " " _archs "${CMAKE_CUDA_ARCHITECTURES}")
 message(STATUS "CMAKE_CUDA_ARCHITECTURES = ${_archs}")
