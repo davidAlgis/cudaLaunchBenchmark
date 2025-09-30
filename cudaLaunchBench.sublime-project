@@ -2,6 +2,58 @@
 	"folders": [
 		{
 			"path": "."
-		},
+		}
 	],
+	"build_systems": [
+		{
+			"name": "cudaLaunchBench - Configure",
+			"working_dir": "$project_path",
+			"linux": {
+				"shell_cmd": "python3 scripts/setup.py configure"
+			},
+			"windows": {
+				"shell_cmd": "py -3 scripts\\setup.py configure"
+			}
+		},
+		{
+			"name": "cudaLaunchBench - Build Debug",
+			"working_dir": "$project_path",
+			"linux": {
+				"shell_cmd": "python3 scripts/setup.py build --config Debug"
+			},
+			"windows": {
+				"shell_cmd": "py -3 scripts\\setup.py build --config Debug"
+			}
+		},
+		{
+			"name": "cudaLaunchBench - Build Release",
+			"working_dir": "$project_path",
+			"linux": {
+				"shell_cmd": "python3 scripts/setup.py build --config Release"
+			},
+			"windows": {
+				"shell_cmd": "py -3 scripts\\setup.py build --config Release"
+			}
+		},
+		{
+			"name": "cudaLaunchBench - Run Debug",
+			"working_dir": "$project_path",
+			"linux": {
+				"shell_cmd": "python3 scripts/setup.py run --config Debug"
+			},
+			"windows": {
+				"shell_cmd": "py -3 scripts\\setup.py run --config Debug"
+			}
+		},
+		{
+			"name": "cudaLaunchBench - Run Release",
+			"working_dir": "$project_path",
+			"linux": {
+				"shell_cmd": "python3 scripts/setup.py run --config Release"
+			},
+			"windows": {
+				"shell_cmd": "py -3 scripts\\setup.py run --config Release"
+			}
+		}
+	]
 }
